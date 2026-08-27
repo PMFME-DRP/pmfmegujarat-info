@@ -27,57 +27,53 @@ jobs:
           mkdir -p _site
           curl -L "https://raw.githubusercontent.com/PMFME-DRP/PMFME-DRP-WEBSITE/main/index.html" -o _site/index.html
 
-          # Copy all original assets, including homepage videos.
           git clone --depth 1 --filter=blob:none --no-checkout https://github.com/PMFME-DRP/PMFME-DRP-WEBSITE.git original-site
           cd original-site
-          git sparse-checkout set assets
+          git sparse-checkout set assets data
           git checkout
           cd ..
           cp -R original-site/assets _site/assets
+          if [ -d original-site/data ]; then cp -R original-site/data _site/data; fi
           rm -rf original-site
 
-          # Correct old domain references.
           sed -i 's#https://www\.pmfmegujarat\.infofofofo#https://pmfmegujarat.info#g' _site/index.html
           sed -i 's#https://www\.pmfmegujarat\.infofofo#https://pmfmegujarat.info#g' _site/index.html
           sed -i 's#https://www\.pmfmegujarat\.infofo#https://pmfmegujarat.info#g' _site/index.html
           sed -i 's#https://www\.pmfmegujarat\.in#https://pmfmegujarat.info#g' _site/index.html
           sed -i 's#https://pmfmegujarat\.in#https://pmfmegujarat.info#g' _site/index.html
 
-          # Replace the entire old dashboard section safely.
-          # The previous script stopped at the first nested </section>, which
-          # left the HTML malformed and caused the dashboard layout to break.
           python3 - <<'PY'
           from pathlib import Path
           p = Path('_site/index.html')
           s = p.read_text(encoding='utf-8')
           start = s.find('<!-- PMFME_OFFICIAL_DASHBOARD_HOME -->')
-          end_marker = '</section>\n\n</main>'
-          if start != -1:
-              end = s.find(end_marker, start)
-              if end != -1:
-                  end += len('</section>')
-                  live = '''<!-- PMFME_OFFICIAL_DASHBOARD_HOME -->
-          <section id="pmfme-official-dashboard" style="background:linear-gradient(180deg,#f4fafd 0%,#eef7fa 100%);padding:58px 0;border-top:1px solid #d8e9f0;border-bottom:1px solid #d8e9f0">
-            <div style="width:min(1160px,92%);margin:auto">
-              <div style="text-align:center;max-width:860px;margin:0 auto 28px">
-                <span style="display:inline-block;color:#1d6f9f;font-size:12px;letter-spacing:1.8px;font-weight:900">OFFICIAL GOVERNMENT DATA</span>
-                <h2 style="font-size:clamp(30px,4vw,42px);line-height:1.12;color:#123f63;margin:7px 0 10px">PMFME Gujarat Dashboard</h2>
-                <p style="color:#5d7485;font-size:14px;margin:0">Live Gujarat dashboard from the Ministry of Food Processing Industries, Government of India.</p>
-              </div>
-              <div style="background:#fff;border:1px solid #d7e6ee;border-radius:22px;padding:10px;box-shadow:0 14px 38px rgba(18,63,99,.10);overflow:hidden">
-                <div style="height:24px;display:flex;align-items:center;gap:8px;padding:0 8px;color:#5d7485;font-size:11px;font-weight:700">
-                  <span style="width:8px;height:8px;border-radius:50%;background:#2b9b93;display:inline-block"></span>
-                  LIVE OFFICIAL SOURCE
-                </div>
-                <iframe src="https://pmfme.mofpi.gov.in/sitesubsite/#/state/gujarat" title="Official PMFME Gujarat Dashboard" style="display:block;width:100%;height:760px;border:0;border-radius:14px;background:#fff" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>
-              </div>
-              <div style="display:flex;justify-content:center;align-items:center;gap:12px;flex-wrap:wrap;margin-top:16px">
-                <a href="https://pmfme.mofpi.gov.in/sitesubsite/#/state/gujarat" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;background:#1d6f9f;color:#fff;border-radius:999px;padding:13px 20px;font-size:13px;font-weight:800;text-decoration:none">Open Official Gujarat Dashboard ↗</a>
-                <span style="font-size:11px;color:#687f8d">If the government portal blocks embedded viewing, use the button above.</span>
-              </div>
+          end = s.find('</main>', start) if start != -1 else -1
+          if start != -1 and end != -1:
+              dashboard = r'''<!-- PMFME_OFFICIAL_DASHBOARD_HOME -->
+          <section id="pmfme-official-dashboard" class="pmfme-home-dashboard">
+          <style>
+          .pmfme-home-dashboard{background:linear-gradient(180deg,#f4fafd 0%,#eef7fa 100%);padding:58px 0;border-top:1px solid #d8e9f0;border-bottom:1px solid #d8e9f0}.pmfme-home-dashboard .dash-wrap{width:min(1160px,92%);margin:auto}.pmfme-home-dashboard .dash-head{text-align:center;max-width:850px;margin:0 auto 28px}.pmfme-home-dashboard .dash-head .eyebrow{display:inline-block;color:#1d6f9f;font-size:12px;letter-spacing:1.8px;font-weight:900}.pmfme-home-dashboard .dash-head h2{font-size:clamp(30px,4vw,42px);line-height:1.12;color:#123f63;margin:7px 0 10px}.pmfme-home-dashboard .dash-head p{color:#5d7485;font-size:14px;margin:0}.pmfme-home-dashboard .dash-meta{margin-top:9px;font-size:11px;color:#718898}.pmfme-home-dashboard .dash-meta a{color:#1d6f9f;text-decoration:underline}.pmfme-home-dashboard .dash-status{display:flex;justify-content:center;align-items:center;gap:7px;margin:0 auto 14px;font-size:11px;font-weight:800;color:#2b756e}.pmfme-home-dashboard .dot{width:8px;height:8px;border-radius:50%;background:#2b9b93;display:inline-block}.pmfme-home-dashboard .metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.pmfme-home-dashboard .metric{color:#fff;border-radius:18px;padding:21px;min-height:155px;box-shadow:0 10px 28px rgba(18,63,99,.10)}.pmfme-home-dashboard .metric:nth-child(1){background:#247fb5}.pmfme-home-dashboard .metric:nth-child(2){background:#1d9cab}.pmfme-home-dashboard .metric:nth-child(3){background:#248d82}.pmfme-home-dashboard .metric:nth-child(4){background:#d78922}.pmfme-home-dashboard .metric:nth-child(5){background:#79665e}.pmfme-home-dashboard .metric:nth-child(6){background:#5366ad}.pmfme-home-dashboard .metric h3{font-size:16px;margin:0 0 7px}.pmfme-home-dashboard .metric-total{font-size:30px;font-weight:900;margin-bottom:9px}.pmfme-home-dashboard .years{display:grid;grid-template-columns:1fr 1fr;gap:3px 12px;font-size:11px}.pmfme-home-dashboard .years span{display:flex;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.18);padding:2px 0}.pmfme-home-dashboard .dash-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:15px;margin-top:15px}.pmfme-home-dashboard .panel{background:#fff;border:1px solid #d7e6ee;border-radius:17px;padding:20px;box-shadow:0 8px 22px rgba(18,63,99,.06)}.pmfme-home-dashboard .panel h3{color:#123f63;font-size:19px;margin:0 0 13px}.pmfme-home-dashboard .bar-row{margin:9px 0}.pmfme-home-dashboard .bar-label{display:flex;justify-content:space-between;font-size:11px;color:#526d7c;margin-bottom:4px}.pmfme-home-dashboard .bar{height:16px;background:#edf3f6;border-radius:5px;overflow:hidden}.pmfme-home-dashboard .bar i{display:block;height:100%;background:#315a78;border-radius:5px}.pmfme-home-dashboard .cats{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.pmfme-home-dashboard .cat{padding:13px;border-radius:12px;background:#eef7f8;text-align:center}.pmfme-home-dashboard .cat b{display:block;font-size:20px;color:#123f63}.pmfme-home-dashboard .cat span{font-size:11px;color:#5d7485}.pmfme-home-dashboard .sanction{margin-top:15px}.pmfme-home-dashboard .tops{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:15px}.pmfme-home-dashboard .top{border-radius:17px;padding:19px;color:#fff}.pmfme-home-dashboard .top:nth-child(1){background:#238f83}.pmfme-home-dashboard .top:nth-child(2){background:#9a3eac}.pmfme-home-dashboard .top:nth-child(3){background:#607985}.pmfme-home-dashboard .top h3{font-size:17px;margin:0 0 9px}.pmfme-home-dashboard .rank{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.22);font-size:12px}.pmfme-home-dashboard .rank:last-child{border-bottom:0}.pmfme-home-dashboard .dash-bottom{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:18px;flex-wrap:wrap}.pmfme-home-dashboard .note{font-size:11px;color:#687f8d}.pmfme-home-dashboard .official-btn{display:inline-flex;align-items:center;justify-content:center;background:#1d6f9f;color:#fff;border-radius:999px;padding:12px 18px;font-size:12px;font-weight:800;text-decoration:none}.pmfme-home-dashboard .loading{padding:45px;text-align:center;color:#5d7485}.pmfme-home-dashboard .error{padding:25px;text-align:center;background:#fff7ed;border:1px solid #f0d3ad;border-radius:14px;color:#7b5b35}@media(max-width:850px){.pmfme-home-dashboard .metrics,.pmfme-home-dashboard .dash-grid,.pmfme-home-dashboard .tops{grid-template-columns:1fr}.pmfme-home-dashboard .years{grid-template-columns:1fr}}
+          </style>
+          <div class="dash-wrap">
+            <div class="dash-head">
+              <span class="eyebrow">OFFICIAL PMFME GUJARAT DATA</span>
+              <h2>PMFME Gujarat Dashboard</h2>
+              <p>Key Gujarat performance information synchronized from the Ministry of Food Processing Industries, Government of India.</p>
+              <div class="dash-meta" id="phd-meta">Loading latest synchronized data…</div>
             </div>
-          </section>'''
-                  s = s[:start] + live + s[end:]
+            <div class="dash-status"><span class="dot"></span> LIVE DATA DISPLAY · NO EMBEDDED FRAME</div>
+            <div id="phd-content"><div class="loading">Loading Gujarat dashboard data…</div></div>
+            <div class="dash-bottom">
+              <span class="note">Source: Ministry of Food Processing Industries, Government of India · NIC.</span>
+              <a class="official-btn" href="https://pmfme.mofpi.gov.in/sitesubsite/#/state/gujarat" target="_blank" rel="noopener">Open Official Gujarat Dashboard ↗</a>
+            </div>
+          </div>
+          <script>
+          (()=>{const root=document.getElementById('pmfme-official-dashboard');if(!root)return;const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const n=x=>Number(x||0).toLocaleString('en-IN');const metric=(title,key,d)=>{const rows=d.yearly?.[key]||[];return `<article class="metric"><h3>${esc(title)}</h3><div class="metric-total">${n(d.totals?.[key])}</div><div class="years">${rows.map(r=>`<span><b>${esc(r.year)}</b><b>${n(r.value)}</b></span>`).join('')}</div></article>`};const bars=(title,rows)=>{const max=Math.max(...rows.map(x=>Number(x.value)||0),1);return `<section class="panel"><h3>${esc(title)}</h3>${rows.map(x=>`<div class="bar-row"><div class="bar-label"><span>${esc(x.date)}</span><b>${n(x.value)}</b></div><div class="bar"><i style="width:${(Number(x.value)||0)/max*100}%"></i></div></div>`).join('')}</section>`};const tops=(title,rows)=>`<article class="top"><h3>${esc(title)}</h3>${rows.map(r=>`<div class="rank"><span>${esc(r.name)}</span><b>${n(r.value)}</b></div>`).join('')}</article>`;fetch('/data/pmfme-gujarat-dashboard.json?ts='+Date.now()).then(r=>{if(!r.ok)throw Error('data unavailable');return r.json()}).then(d=>{const a=d.lastSevenDays?.applicationsSubmitted||[],s=d.lastSevenDays?.applicationsSanctioned||[];document.getElementById('phd-meta').innerHTML=`Last synchronized: <b>${esc(new Date(d.syncedAt).toLocaleString('en-IN'))}</b> · <a href="${esc(d.sourceUrl)}" target="_blank" rel="noopener">Official source</a>`;document.getElementById('phd-content').innerHTML=`<div class="metrics">${metric('Applications Submitted','applicationsSubmitted',d)}${metric('Loan Sanctioned','loanSanctioned',d)}${metric('Loan Disbursed','loanDisbursed',d)}${metric('Applications Forwarded To Bank','applicationsForwardedToBank',d)}${metric('ODOP Applications','odopApplications',d)}${metric('Non ODOP Applications','nonOdopApplications',d)}</div><div class="dash-grid">${bars('Applications submitted in last seven days',a)}<section class="panel"><h3>Social Category wise No of Application</h3><div class="cats">${Object.entries(d.socialCategory||{}).map(([k,v])=>`<div class="cat"><b>${v}%</b><span>${esc(k)}</span></div>`).join('')}</div><div class="sanction">${bars('Applications sanctioned in last seven days',s).replace(/^<section class="panel">|<\/section>$/g,'')}</div></section></div><div class="tops">${tops('Top 5 Performing DLCs',d.topPerformers?.dlcs||[])}${tops('Top 5 Performing Districts',d.topPerformers?.districts||[])}${tops('Top 5 Performing DRPs',d.topPerformers?.drps||[])}</div>`}).catch(()=>{document.getElementById('phd-content').innerHTML='<div class="error"><b>Dashboard data is temporarily unavailable.</b><br>Please use the official Gujarat dashboard button below.</div>'})})();
+          </script>
+          </section>
+          '''
+              s = s[:start] + dashboard + s[end:]
           p.write_text(s, encoding='utf-8')
           PY
 
