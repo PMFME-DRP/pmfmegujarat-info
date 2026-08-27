@@ -31,12 +31,27 @@ jobs:
             "https://raw.githubusercontent.com/PMFME-DRP/PMFME-DRP-WEBSITE/main/index.html" \
             -o _site/index.html
 
+          # Copy the original site's assets, including all homepage videos.
+          git clone --depth 1 --filter=blob:none --no-checkout \
+            https://github.com/PMFME-DRP/PMFME-DRP-WEBSITE.git original-site
+          cd original-site
+          git sparse-checkout set assets
+          git checkout
+          cd ..
+          cp -R original-site/assets _site/assets
+          rm -rf original-site
+
+          # Correct the canonical domain and any old .in references.
           sed -i \
             's#https://www\.pmfmegujarat\.infofo/#https://pmfmegujarat.info/#g' \
             _site/index.html
 
           sed -i \
             's#https://pmfmegujarat\.in#https://pmfmegujarat.info#g' \
+            _site/index.html
+
+          sed -i \
+            's#https://www\.pmfmegujarat\.in#https://pmfmegujarat.info#g' \
             _site/index.html
 
           cat > _site/robots.txt <<'EOF'
