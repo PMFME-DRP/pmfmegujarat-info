@@ -1,0 +1,70 @@
+name: Deploy PMFME Gujarat to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Prepare website
+        run: |
+          mkdir -p _site
+
+          curl -L \
+            "https://raw.githubusercontent.com/PMFME-DRP/PMFME-DRP-WEBSITE/main/index.html" \
+            -o _site/index.html
+
+          sed -i \
+            's#https://www\.pmfmegujarat\.infofo/#https://pmfmegujarat.info/#g' \
+            _site/index.html
+
+          sed -i \
+            's#https://pmfmegujarat\.in#https://pmfmegujarat.info#g' \
+            _site/index.html
+
+          cat > _site/robots.txt <<'EOF'
+          User-agent: *
+          Allow: /
+
+          Sitemap: https://pmfmegujarat.info/sitemap.xml
+          EOF
+
+          cat > _site/sitemap.xml <<'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+            <url>
+              <loc>https://pmfmegujarat.info/</loc>
+              <changefreq>daily</changefreq>
+              <priority>1.0</priority>
+            </url>
+          </urlset>
+          EOF
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload website
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./_site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
